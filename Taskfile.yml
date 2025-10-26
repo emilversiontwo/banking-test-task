@@ -28,6 +28,12 @@ tasks:
       - docker compose --file {{.DOCKER_COMPOSE}} up --build -d --force-recreate --remove-orphans
       - task: composer
         vars: { CLI_ARGS: 'install' }
+      - task: artisan
+        vars: { CLI_ARGS: 'key:generate' }
+      - task: artisan
+        vars: { CLI_ARGS: 'migrate:fresh' }
+      - task: artisan
+        vars: { CLI_ARGS: 'db:seed' }
 
   up:
     silent: true
