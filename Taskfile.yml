@@ -1,0 +1,40 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  DOCKER_COMPOSE: "docker-compose.local.yaml"
+  DOCKER_COMPOSE_DEPLOY: "docker-compose.deploy.yaml"
+
+tasks:
+  artisan:
+    desc: example= task artisan -- migrate
+    cmds:
+      - docker compose --file {{.DOCKER_COMPOSE}} exec app php artisan {{.CLI_ARGS}}
+    silent: true
+
+  composer:
+    desc: example= task composer -- i
+    cmds:
+      - docker compose --file {{.DOCKER_COMPOSE}} exec app composer {{.CLI_ARGS}}
+    silent: true
+
+  setup:
+    desc: Use on first launch
+    silent: true
+    cmds:
+      - cp -n .env.example .env
+      - docker compose --file {{.DOCKER_COMPOSE}} build --no-cache
+      - docker compose --file {{.DOCKER_COMPOSE}} up --build -d --force-recreate --remove-orphans
+      - task: composer
+        vars: { CLI_ARGS: 'install' }
+
+  up:
+    silent: true
+    cmds:
+      - docker compose --file {{.DOCKER_COMPOSE}} up -d --force-recreate
+
+  down:
+    silent: true
+    cmds:
+      - docker compose --file {{.DOCKER_COMPOSE}} down
