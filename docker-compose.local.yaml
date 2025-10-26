@@ -1,0 +1,70 @@
+services:
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT}:80"
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - banking-network
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - composer_cache:/composer
+    environment:
+      APP_ENV: ${APP_ENV}
+      APP_DEBUG: ${APP_DEBUG}
+      DB_CONNECTION: ${DB_CONNECTION}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      COMPOSER_ALLOW_SUPERUSER: "1"
+    networks:
+      - banking-network
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - ./docker/postgres/pg_hba.conf:/var/lib/postgresql/17/docker/pg_hba.conf
+      - postgresdata:/var/lib/postgresql/data
+    ports:
+      - ${DB_PORT}:5432
+    networks:
+      - banking-network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - ${ADMINER_PORT}:8080
+    networks:
+      - banking-network
+
+volumes:
+  postgresdata:
+  composer_cache:
+
+networks:
+  banking-network:
+    driver: bridge
